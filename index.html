@@ -28,7 +28,6 @@ body { font-family: Arial, sans-serif; background: #f5f5f0; color: #1a1a1a; padd
 .questions { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
 .question { background: #fafafa; border: 1px solid #ddd; border-radius: 8px; padding: 0.9rem 1rem; transition: border-color 0.2s; }
 .question.correct { border-color: #0f6e56; background: #e1f5ee; }
-.question.wrong { border-color: #c0392b; background: #fdecea; }
 .q-num { font-size: 11px; color: #888; margin-bottom: 4px; }
 .q-title { font-size: 13px; font-weight: bold; color: #1a1a1a; margin-bottom: 8px; line-height: 1.45; }
 .q-title code { font-family: 'Courier New', monospace; font-size: 12px; background: #eee; padding: 1px 4px; border-radius: 3px; }
@@ -37,7 +36,6 @@ body { font-family: Arial, sans-serif; background: #f5f5f0; color: #1a1a1a; padd
 .opt:hover { background: #f0f0f0; border-color: #bbb; }
 .opt.selected { background: #e6f1fb; border-color: #378add; color: #0c447c; }
 .opt.correct-ans { background: #e1f5ee !important; border-color: #0f6e56 !important; color: #085041 !important; }
-.opt.wrong-ans { background: #fdecea !important; border-color: #c0392b !important; color: #791f1f !important; }
 .opt-letter { font-weight: bold; font-size: 11px; min-width: 16px; }
 
 .result-panel { display: none; background: #f9f9f5; border: 1px solid #ddd; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; text-align: center; }
@@ -68,7 +66,7 @@ body { font-family: Arial, sans-serif; background: #f5f5f0; color: #1a1a1a; padd
   <div class="header">
     <div class="logo">I/A\M</div>
     <div class="title">Devoir : SQL Server</div>
-    <div class="subtitle">QCM — 20 questions · Durée conseillée : 30 minutes</div>
+    <div class="subtitle">QCM — 20 questions · Durée conseillée : 1 heure</div>
   </div>
 
   <div class="score-bar">
@@ -80,10 +78,7 @@ body { font-family: Arial, sans-serif; background: #f5f5f0; color: #1a1a1a; padd
       <div class="score-label">Bonnes</div>
       <div class="score-val note" id="s-correct">0</div>
     </div>
-    <div class="score-item">
-      <div class="score-label">Mauvaises</div>
-      <div class="score-val neg" id="s-wrong">0</div>
-    </div>
+
     <div class="score-item">
       <div class="score-label">Note /20</div>
       <div class="score-val" id="s-score">—</div>
@@ -108,7 +103,7 @@ body { font-family: Arial, sans-serif; background: #f5f5f0; color: #1a1a1a; padd
     <button class="btn" onclick="toggleAnswers()" id="btn-show" style="display:none">Voir les réponses</button>
     <button class="btn" onclick="resetQuiz()" style="display:none" id="btn-reset">&#8635; Recommencer</button>
   </div>
-  <div class="scoring-info">Bonne réponse : +0.5 &nbsp;|&nbsp; Mauvaise réponse : −0.5 &nbsp;|&nbsp; Sans réponse : 0</div>
+  <div class="scoring-info">Bonne réponse : +1 &nbsp;|&nbsp; Mauvaise réponse : 0 &nbsp;|&nbsp; Sans réponse : 0</div>
 
 </div>
 
@@ -177,12 +172,11 @@ function updateScore() {
     if (a === questions[i].ans) correct++;
     else wrong++;
   });
-  const rawScore = correct * 0.5 - wrong * 0.5;
-  const note = Math.max(0, rawScore * 2);
+  const note = correct;
   document.getElementById('s-answered').textContent = answered;
   document.getElementById('s-correct').textContent = correct;
   document.getElementById('s-wrong').textContent = wrong;
-  document.getElementById('s-score').textContent = answered > 0 ? note.toFixed(1) : '—';
+  document.getElementById('s-score').textContent = answered > 0 ? note : '—';
   document.getElementById('progress-fill').style.width = Math.round(answered / 20 * 100) + '%';
   document.getElementById('progress-txt').textContent = answered + ' / 20 questions répondues';
 }
@@ -194,7 +188,6 @@ function showAnswers() {
     letters.forEach((_, oi) => {
       const el = document.getElementById(`opt-${qi}-${oi}`);
       if (oi === q.ans) el.classList.add('correct-ans');
-      else if (userAnswers[qi] === oi) el.classList.add('wrong-ans');
     });
   });
 }
@@ -202,8 +195,7 @@ function showAnswers() {
 function hideAnswers() {
   questions.forEach((_, qi) => {
     [0,1,2,3].forEach(oi => {
-      const el = document.getElementById(`opt-${qi}-${oi}`);
-      el.classList.remove('correct-ans', 'wrong-ans');
+      document.getElementById(`opt-${qi}-${oi}`).classList.remove('correct-ans');
     });
   });
 }
@@ -231,19 +223,19 @@ function submitQuiz() {
     const qDiv = document.getElementById('q-' + i);
     if (a === null) return;
     if (a === questions[i].ans) { qDiv.classList.add('correct'); correct++; }
-    else { qDiv.classList.add('wrong'); wrong++; }
+    else { wrong++; }
   });
 
-  const note = Math.max(0, (correct * 0.5 - wrong * 0.5) * 2);
-  const noteFmt = note % 1 === 0 ? note.toFixed(0) : note.toFixed(1);
+  const note = correct;
+  const noteFmt = note.toFixed(0);
   const unanswered = 20 - correct - wrong;
 
   const panel = document.getElementById('result-panel');
   panel.style.display = 'block';
   document.getElementById('res-note').textContent = noteFmt + ' / 20';
   document.getElementById('res-detail').textContent =
-    correct + ' bonne(s) (+' + (correct * 0.5).toFixed(1) + ') · ' +
-    wrong + ' mauvaise(s) (−' + (wrong * 0.5).toFixed(1) + ') · ' +
+    correct + ' bonne(s) (+' + correct + ') · ' +
+    wrong + ' mauvaise(s) (0) · ' +
     unanswered + ' sans réponse';
 
   let mention = '', badgeStyle = '';
